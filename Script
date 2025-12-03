@@ -1,4 +1,6 @@
 local Player = game.Players.LocalPlayer
+local Tween = game:GetService('TweenService')
+local TweenInfo = TweenInfo.new(1,Enum.EasingStyle.Linear)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({
     Name = "The Forge Beta (༗ Pv3Moddz </>)",
@@ -9,28 +11,33 @@ local Window = Rayfield:CreateWindow({
     Theme = "Amethyst",
     ToggleUIKeybind = "K",
     ConfigurationSaving = {
-     Enabled = true,
-     FileName = "Saves"
+        Enabled = true,
+        FileName = "Saves"
     },
 })
 
 local FarmTab = Window:CreateTab("Auto Farm", 4483362458)
 FarmTab:CreateSection("Auto Mine")
 local AutoMineDropdown = FarmTab:CreateDropdown({
-   Name = "Stone Type",
-   Options = {"Pebble","Rock","Boulder"},
-   CurrentOption = {"Pebble"},
-   MultipleOptions = false,
-   Flag = "AutoMineDropdown",
-   Callback = function(Options)
-   end,
+    Name = "Stone Type",
+    Options = {"Pebble","Rock","Boulder"},
+    CurrentOption = {"Pebble"},
+    MultipleOptions = false,
+    Flag = "AutoMineDropdown",
+    Callback = function(Options)
+    end,
 })
 local AutoMinerToggle = FarmTab:CreateToggle({
-   Name = "Enable AutoFarm",
-   CurrentValue = false,
-   Flag = "AutoMinerToggle",
-   Callback = function(Value)
-   end,
+    Name = "Enable AutoFarm",
+    CurrentValue = false,
+    Flag = "AutoMinerToggle",
+    Callback = function(Value)
+        While Value == true do
+            local HRP = Player.Character.HumanoidRootPart
+            HRP.Anchor = true
+            -- Tween:Create(hrp,TweenInfo,{CFrame=CFrameV}):Play()
+        end,
+    end,
 })
 
 FarmTab:CreateSection("Close")
