@@ -23,7 +23,7 @@ local Section = Tab:CreateSection("Miner Farm")
 local Button = Tab:CreateButton({
     Name = "Close Script",
     Callback = function()
-        RayField.Destroy() -- The function that takes place when the button is pressed
+        Rayfield:Destroy() -- The function that takes place when the button is pressed
     end,
 })
 
