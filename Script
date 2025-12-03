@@ -2,14 +2,12 @@ local Player = game.Players.LocalPlayer
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({
     Name = "The Forge Beta (༗ Pv3Moddz </>)",
-    Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
-    LoadingTitle = "Initializing...",
+    Icon = 0,
+    LoadingTitle = "The Forge Beta",
     LoadingSubtitle = "by ༗ Pv3Moddz </>",
-    ShowText = "༗ Pv3Moddz </>", -- for mobile users to unhide rayfield, change if you'd like
-    Theme = "Amethyst", -- Check https://docs.sirius.menu/rayfield/configuration/themes
-
+    ShowText = "༗ Pv3Moddz </>",
+    Theme = "Amethyst",
     ToggleUIKeybind = "K",
-
     ConfigurationSaving = {
      Enabled = true,
      FileName = "Saves"
@@ -17,24 +15,29 @@ local Window = Rayfield:CreateWindow({
 })
 
 local FarmTab = Window:CreateTab("Auto Farm", 4483362458)
-
-local Section = FarmTab:CreateSection("Miner Farm")
-local MineFarmDropdown = FarmTab:CreateDropdown({
+FarmTab:CreateSection("Auto Mine")
+local AutoMineDropdown = FarmTab:CreateDropdown({
    Name = "Stone Type",
    Options = {"Pebble","Rock","Boulder"},
    CurrentOption = {"Pebble"},
    MultipleOptions = false,
-   Flag = "MineFarmDropdown", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Flag = "AutoMineDropdown",
    Callback = function(Options)
-   -- The function that takes place when the selected option is changed
-   -- The variable (Options) is a table of strings for the current selected options
    end,
 })
-local Section = FarmTab:CreateSection("Close")
-local Button = FarmTab:CreateButton({
+local AutoMinerToggle = FarmTab:CreateToggle({
+   Name = "Enable AutoFarm",
+   CurrentValue = false,
+   Flag = "AutoMinerToggle",
+   Callback = function(Value)
+   end,
+})
+
+FarmTab:CreateSection("Close")
+local CloseButton = FarmTab:CreateButton({
     Name = "Remove Script",
     Callback = function()
-        Rayfield:Destroy() -- The function that takes place when the button is pressed
+        Rayfield:Destroy()
     end,
 })
 
