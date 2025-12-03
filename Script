@@ -19,7 +19,7 @@ local Window = Rayfield:CreateWindow({
 local FarmTab = Window:CreateTab("Auto Farm", 4483362458)
 
 local Section = FarmTab:CreateSection("Miner Farm")
-local MineFarmDropdown = Section:CreateDropdown({
+local MineFarmDropdown = FarmTab:CreateDropdown({
    Name = "Stone Type",
    Options = {"Pebble","Rock","Boulder"},
    CurrentOption = {"Pebble"},
@@ -30,8 +30,6 @@ local MineFarmDropdown = Section:CreateDropdown({
    -- The variable (Options) is a table of strings for the current selected options
    end,
 })
-
-
 local Section = FarmTab:CreateSection("Close")
 local Button = FarmTab:CreateButton({
     Name = "Remove Script",
