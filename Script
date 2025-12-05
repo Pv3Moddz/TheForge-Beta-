@@ -90,7 +90,7 @@ MineFarmToggle = MinerFarmTab:CreateToggle({
                                         if DestPart and Health and MaxHealth and Health > 0 then
                                             if LastHitPlayer == Player.Name or Health == MaxHealth then
                                                 for _, StoneName in ipairs(MineFarmDropdown.CurrentOption) do
-                                                    if string.find(Item.Name, StoneName, 1, true) then
+                                                    if string.match(Item.Name, "^"..StoneName) then
                                                         local Dist = (DestPart.Position - HRP.Position).Magnitude
                                                         if Dist < LastDist then
                                                             LastDist = Dist
@@ -107,8 +107,8 @@ MineFarmToggle = MinerFarmTab:CreateToggle({
                     end
                     if Target then
                         local Destination = Target:FindFirstChild("Hitbox")
-                        if Destination and TeleportSpeedSlider then
-                            local TPTween = Tween:Create(HRP, TweenInfo.new((Destination.Position - HRP.Position).Magnitude / TeleportSpeedSlider.CurrentValue, Enum.EasingStyle.Linear), {CFrame = Destination.CFrame + Vector3.new(0,-8,0)})
+                        if Destination and TeleportSpeedSlider and MineFarmHeightSlider then
+                            local TPTween = Tween:Create(HRP, TweenInfo.new((Destination.Position - HRP.Position).Magnitude / TeleportSpeedSlider.CurrentValue, Enum.EasingStyle.Linear), {CFrame = Destination.CFrame + Vector3.new(0,MineFarmHeightSlider.CurrentValue,0)})
                             TPTween:Play()
                             TPTween.Completed:Wait()
                             HRP.Anchored = true
@@ -119,7 +119,7 @@ MineFarmToggle = MinerFarmTab:CreateToggle({
                                 game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("ToolService"):WaitForChild("RF"):WaitForChild("ToolActivated"):InvokeServer("Pickaxe")
                                 local Named = false
                                 for _, StoneName in ipairs(MineFarmDropdown.CurrentOption) do
-                                    if string.find(Target.Name, StoneName, 1, true) then
+                                    if string.match(Target.Name, "^"..StoneName) then
                                         Named = true
                                     end
                                 end
@@ -187,7 +187,7 @@ MobFarmToggle = MobFarmTab:CreateToggle({
                         local NpcHRP = Living:FindFirstChild("HumanoidRootPart")
                         local NpcHumanoid = Living:FindFirstChild("Humanoid")
                         for _, MobName in ipairs(MobFarmDropdown.CurrentOption) do
-                            if string.find(Living.Name, MobName, 1, true) and IsNpc and IsNpc == true and NpcHRP and NpcHumanoid and NpcHumanoid.Health > 0 then
+                            if string.match(Living.Name, "^"..MobName) and IsNpc and IsNpc == true and NpcHRP and NpcHumanoid and NpcHumanoid.Health > 0 then
                                 local Dist = (NpcHRP.Position - HRP.Position).Magnitude
                                 if Dist < LastDist then
                                     LastDist = Dist
@@ -276,5 +276,17 @@ TeleportSpeedSlider = TeleportTab:CreateSlider({
     end,
 })
 TeleportTab:CreateSection("Teleport Shops")
+TeleportTab:CreateButton({
+    Name = "Forging Station",
+    Callback = function()
+        local Pos = Vector3.new(-193, 30, 160)
+        local HRP = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+        if HRP and TeleportSpeedSlider then
+            local TPTween = Tween:Create(HRP, TweenInfo.new((Pos - HRP.Position).Magnitude / TeleportSpeedSlider.CurrentValue, Enum.EasingStyle.Linear), {CFrame = CFrame.new(Pos)})
+            TPTween:Play()
+            TPTween.Completed:Wait()
+        end
+    end,
+})
 
 Rayfield:SetVisibility(true)
