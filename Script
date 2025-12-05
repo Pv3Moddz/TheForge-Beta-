@@ -15,6 +15,9 @@ local Window = Rayfield:CreateWindow({
     },
 })
 
+local Teleporting = false
+
+
 local MineFarmRunning = false
 local MineFarmToggle = nil
 local MineFarmDropdown = nil
@@ -28,9 +31,22 @@ local MobFarmForwardSlider = nil
 local MobFarmRightSlider = nil
 local MobFarmUpSlider = nil
 
+local TeleportSpeedSlider = nil
+
 local MainTab = Window:CreateTab("Main", 4483362458)
 
 MainTab:CreateSection("Camera")
+MainTab:CreateSlider({
+    Name = "CameraMaxZoomDistance",
+    Range = {50, 500},
+    Increment = 1,
+    Suffix = "cm",
+    CurrentValue = 50,
+    Flag = "CameraMaxZoomSlide",
+    Callback = function(Value)
+        Player.CameraMaxZoomDistance = Value
+    end,
+})
 MainTab:CreateButton({
     Name = "Enable Invisicam",
     Callback = function()
@@ -91,8 +107,8 @@ MineFarmToggle = MinerFarmTab:CreateToggle({
                     end
                     if Target then
                         local Destination = Target:FindFirstChild("Hitbox")
-                        if Destination then
-                            local TPTween = Tween:Create(HRP, TweenInfo.new((Destination.Position - HRP.Position).Magnitude / 60, Enum.EasingStyle.Linear), {CFrame = Destination.CFrame + Vector3.new(0,-8,0)})
+                        if Destination and TeleportSpeedSlider then
+                            local TPTween = Tween:Create(HRP, TweenInfo.new((Destination.Position - HRP.Position).Magnitude / TeleportSpeedSlider.CurrentValue, Enum.EasingStyle.Linear), {CFrame = Destination.CFrame + Vector3.new(0,-8,0)})
                             TPTween:Play()
                             TPTween.Completed:Wait()
                             HRP.Anchored = true
@@ -185,9 +201,9 @@ MobFarmToggle = MobFarmTab:CreateToggle({
                         local NpcHRP = Target:FindFirstChild("HumanoidRootPart")
                         local NpcHumanoid = Target:FindFirstChild("Humanoid")
                         while Target and Continue and MobFarmRunning do
-                            if NpcHRP and NpcHumanoid and NpcHumanoid.Health > 0 then
+                            if NpcHRP and NpcHumanoid and NpcHumanoid.Health > 0 and TeleportSpeedSlider then
                                 HRP.Anchored = false
-                                local TPTween = Tween:Create(HRP, TweenInfo.new((NpcHRP.Position - HRP.Position).Magnitude / 150, Enum.EasingStyle.Linear), {CFrame = NpcHRP.CFrame + (NpcHRP.CFrame.LookVector * MobFarmForwardSlider.CurrentValue) + (NpcHRP.CFrame.UpVector * MobFarmUpSlider.CurrentValue) + (NpcHRP.CFrame.RightVector * MobFarmRightSlider.CurrentValue)})
+                                local TPTween = Tween:Create(HRP, TweenInfo.new((NpcHRP.Position - HRP.Position).Magnitude / TeleportSpeedSlider.CurrentValue, Enum.EasingStyle.Linear), {CFrame = NpcHRP.CFrame + (NpcHRP.CFrame.LookVector * MobFarmForwardSlider.CurrentValue) + (NpcHRP.CFrame.UpVector * MobFarmUpSlider.CurrentValue) + (NpcHRP.CFrame.RightVector * MobFarmRightSlider.CurrentValue)})
                                 TPTween:Play()
                                 TPTween.Completed:Wait()
                                 HRP.Anchored = true
@@ -246,5 +262,19 @@ MobFarmUpSlider = MobFarmTab:CreateSlider({
     Callback = function(Value)
     end,
 })
+
+local TeleportTab = Window:CreateTab("Teleport", 4483362458)
+TeleportTab:CreateSection("TeleportSpeed")
+TeleportSpeedSlider = TeleportTab:CreateSlider({
+    Name = "Teleport Speed",
+    Range = {30, 150},
+    Increment = 1,
+    Suffix = "x",
+    CurrentValue = 60,
+    Flag = "MineFarmHeightSlider",
+    Callback = function(Value)
+    end,
+})
+TeleportTab:CreateSection("Teleport Shops")
 
 Rayfield:SetVisibility(true)
