@@ -15,43 +15,55 @@ local Window = Rayfield:CreateWindow({
     },
 })
 
-local FarmTab = Window:CreateTab("Auto Farm", 4483362458)
-FarmTab:CreateSection("Auto Mine")
-local AutoMineDropdown = FarmTab:CreateDropdown({
-    Name = "Stone Type",
-    Options = {"Pebble", "Rock", "Boulder", "Lucky Block", "Basalt Rock", "Basalt Core", "Basalt Vein", "Volcanic Rock"},
-    CurrentOption = {"Pebble"},
-    MultipleOptions = true,
-    Flag = "AutoMineDropdown",
-    Callback = function(Options)
+local MineFarmRunning = false
+local MineFarmToggle = nil
+local MineFarmDropdown = nil
+local AreaMineFarmDropdown = nil
+local MineFarmHeightSlider = nil
+
+local MobFarmRunning = false
+local MobFarmToggle = nil
+local MobFarmDropdown = nil
+local MobFarmForwardSlider = nil
+local MobFarmRightSlider = nil
+local MobFarmUpSlider = nil
+
+local MainTab = Window:CreateTab("Main", 4483362458)
+
+MainTab:CreateSection("Camera")
+MainTab:CreateButton({
+    Name = "Enable Invisicam",
+    Callback = function()
+        Player.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Invisicam
     end,
 })
-local AreaMineDropdown = FarmTab:CreateDropdown({
-    Name = "Area Miner",
-    Options = {"Island1CaveDeep", "Island1CaveMid", "Island1CaveStart", "Roof", "Island2CaveDanger1", "Island2CaveDanger2", "Island2CaveDanger3", "Island2CaveDanger4", "Island2CaveDangerClosed", "Island2CaveDeep", "Island2CaveLavaClosed", "Island2CaveMid", "Island2CaveStart", "Island2GoblinCave", "Island2VolcanicDepths"},
-    CurrentOption = {"Island1CaveDeep"},
-    MultipleOptions = true,
-    Flag = "AreaMineDropdown",
-    Callback = function(Options)
+
+MainTab:CreateSection("Close")
+MainTab:CreateButton({
+    Name = "Remove Script",
+    Callback = function()
+        Rayfield:Destroy()
     end,
 })
-local AutoMineRunning = false
-local AutoMinerToggle = FarmTab:CreateToggle({
-    Name = "Enable AutoFarm",
+
+local MinerFarmTab = Window:CreateTab(" Farm", 4483362458)
+MinerFarmTab:CreateSection(" Mine")
+MineFarmToggle = MinerFarmTab:CreateToggle({
+    Name = "Enable MineFarm",
     CurrentValue = false,
-    Flag = "AutoMinerToggle",
+    Flag = "MineFarmToggle",
     Callback = function(Value)
-        AutoMineRunning = Value
-        if Value then
+        MineFarmRunning = Value
+        if Value and MineFarmDropdown and AreaMineFarmDropdown and MineFarmHeightSlider then
             task.spawn(function()
-                while AutoMineRunning do
+                while MineFarmRunning do
                     task.wait()
                     local HRP = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
                     if not HRP then continue end
                     local Target = nil
                     local LastDist = math.huge
                     for _, Area in ipairs(workspace.Rocks:GetChildren()) do
-                        for _, AreaName in ipairs(AreaMineDropdown.CurrentOption) do
+                        for _, AreaName in ipairs(AreaMineFarmDropdown.CurrentOption) do
                             if string.find(Area.Name, AreaName, 1, true) then
                                 for _, SpawnLoc in ipairs(Area:GetChildren()) do
                                     for _, Item in ipairs(SpawnLoc:GetChildren()) do
@@ -59,9 +71,9 @@ local AutoMinerToggle = FarmTab:CreateToggle({
                                         local Health = Item:GetAttribute("Health")
                                         local MaxHealth = Item:GetAttribute("MaxHealth")
                                         local LastHitPlayer = Item:GetAttribute("LastHitPlayer")
-                                        if DestPart and Health and MaxHealth then
+                                        if DestPart and Health and MaxHealth and Health > 0 then
                                             if LastHitPlayer == Player.Name or Health == MaxHealth then
-                                                for _, StoneName in ipairs(AutoMineDropdown.CurrentOption) do
+                                                for _, StoneName in ipairs(MineFarmDropdown.CurrentOption) do
                                                     if string.find(Item.Name, StoneName, 1, true) then
                                                         local Dist = (DestPart.Position - HRP.Position).Magnitude
                                                         if Dist < LastDist then
@@ -80,19 +92,17 @@ local AutoMinerToggle = FarmTab:CreateToggle({
                     if Target then
                         local Destination = Target:FindFirstChild("Hitbox")
                         if Destination then
-                            local distance = (Destination.Position - HRP.Position).Magnitude
-                            local time = distance / 60
-                            local TPTween = Tween:Create(HRP, TweenInfo.new(time, Enum.EasingStyle.Linear), {CFrame = Destination.CFrame + Vector3.new(0,-5,0)})
+                            local TPTween = Tween:Create(HRP, TweenInfo.new((Destination.Position - HRP.Position).Magnitude / 60, Enum.EasingStyle.Linear), {CFrame = Destination.CFrame + Vector3.new(0,-8,0)})
                             TPTween:Play()
                             TPTween.Completed:Wait()
                             HRP.Anchored = true
                             local Continue = true
                             local CurrentHealth = Target:GetAttribute("Health")
-                            while CurrentHealth and Target and CurrentHealth > 0 and AutoMineRunning and Continue do
+                            while CurrentHealth and Target and CurrentHealth > 0 and MineFarmRunning and Continue do
                                 CurrentHealth = Target:GetAttribute("Health")
                                 game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("ToolService"):WaitForChild("RF"):WaitForChild("ToolActivated"):InvokeServer("Pickaxe")
                                 local Named = false
-                                for _, StoneName in ipairs(AutoMineDropdown.CurrentOption) do
+                                for _, StoneName in ipairs(MineFarmDropdown.CurrentOption) do
                                     if string.find(Target.Name, StoneName, 1, true) then
                                         Named = true
                                     end
@@ -103,7 +113,7 @@ local AutoMinerToggle = FarmTab:CreateToggle({
                                 task.wait(0.1)
                             end
                             HRP.Anchored = false
-                            HRP.CFrame = HRP.CFrame + Vector3.new(0,10,0)
+                            HRP.CFrame = Destination.CFrame + Vector3.new(0,10,0)
                         end
                     end
                 end
@@ -111,20 +121,129 @@ local AutoMinerToggle = FarmTab:CreateToggle({
         end
     end,
 })
-
-FarmTab:CreateSection("Camera")
-local CloseButton = FarmTab:CreateButton({
-    Name = "Enable Invisicam",
-    Callback = function()
-        Player.DevCameraOcclusionMode = Enum.DevCameraOcclusionMode.Invisicam
+MineFarmDropdown = MinerFarmTab:CreateDropdown({
+    Name = "Stone Type",
+    Options = {"Pebble", "Rock", "Boulder", "Lucky Block", "Basalt Rock", "Basalt Core", "Basalt Vein", "Volcanic Rock", "Crimson Crystal", "Cyan Crystal", "Earth Crystal", "Light Crystal", "Violet Crystal"},
+    CurrentOption = {"Pebble"},
+    MultipleOptions = true,
+    Flag = "MineFarmDropdown",
+    Callback = function(Options)
+    end,
+})
+AreaMineFarmDropdown = MinerFarmTab:CreateDropdown({
+    Name = "Area Miner",
+    Options = {"Island1CaveDeep", "Island1CaveMid", "Island1CaveStart", "Roof", "Island2CaveDanger1", "Island2CaveDanger2", "Island2CaveDanger3", "Island2CaveDanger4", "Island2CaveDangerClosed", "Island2CaveDeep", "Island2CaveLavaClosed", "Island2CaveMid", "Island2CaveStart", "Island2GoblinCave", "Island2VolcanicDepths"},
+    CurrentOption = {"Island1CaveDeep"},
+    MultipleOptions = true,
+    Flag = "AreaMineFarmDropdown",
+    Callback = function(Options)
+    end,
+})
+MineFarmHeightSlider = MinerFarmTab:CreateSlider({
+    Name = "Miner Height",
+    Range = {-10, 10},
+    Increment = 1,
+    Suffix = "cm",
+    CurrentValue = -7,
+    Flag = "MineFarmHeightSlider",
+    Callback = function(Value)
     end,
 })
 
-FarmTab:CreateSection("Close")
-local CloseButton = FarmTab:CreateButton({
-    Name = "Remove Script",
-    Callback = function()
-        Rayfield:Destroy()
+local MobFarmTab = Window:CreateTab("Mob Farm", 4483362458)
+MobFarmTab:CreateSection("MobFarm")
+MobFarmToggle = MobFarmTab:CreateToggle({
+    Name = "Enable MobFarm",
+    CurrentValue = false,
+    Flag = "MobFarmToggle",
+    Callback = function(Value)
+        MobFarmRunning = Value
+        if Value and MobFarmDropdown then
+            task.spawn(function()
+                while MobFarmRunning and MobFarmForwardSlider and MobFarmRightSlider and MobFarmUpSlider do
+                    task.wait()
+                    local HRP = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+                    if not HRP then continue end
+                    local Target = nil
+                    local LastDist = math.huge
+                    for _, Living in ipairs(workspace.Living:GetChildren()) do
+                        local IsNpc = Living:GetAttribute("IsNpc")
+                        local NpcHRP = Living:FindFirstChild("HumanoidRootPart")
+                        local NpcHumanoid = Living:FindFirstChild("Humanoid")
+                        for _, MobName in ipairs(MobFarmDropdown.CurrentOption) do
+                            if string.find(Living.Name, MobName, 1, true) and IsNpc and IsNpc == true and NpcHRP and NpcHumanoid and NpcHumanoid.Health > 0 then
+                                local Dist = (NpcHRP.Position - HRP.Position).Magnitude
+                                if Dist < LastDist then
+                                    LastDist = Dist
+                                    Target = Living
+                                end
+                            end
+                        end
+                    end
+                    if Target then
+                        local Continue = true
+                        local NpcHRP = Target:FindFirstChild("HumanoidRootPart")
+                        local NpcHumanoid = Target:FindFirstChild("Humanoid")
+                        while Target and Continue and MobFarmRunning do
+                            if NpcHRP and NpcHumanoid and NpcHumanoid.Health > 0 then
+                                HRP.Anchored = false
+                                local TPTween = Tween:Create(HRP, TweenInfo.new((NpcHRP.Position - HRP.Position).Magnitude / 150, Enum.EasingStyle.Linear), {CFrame = NpcHRP.CFrame + (NpcHRP.CFrame.LookVector * MobFarmForwardSlider.CurrentValue) + (NpcHRP.CFrame.UpVector * MobFarmUpSlider.CurrentValue) + (NpcHRP.CFrame.RightVector * MobFarmRightSlider.CurrentValue)})
+                                TPTween:Play()
+                                TPTween.Completed:Wait()
+                                HRP.Anchored = true
+                                game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("ToolService"):WaitForChild("RF"):WaitForChild("ToolActivated"):InvokeServer("Weapon")
+                                local CurrentHRP = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+                                if CurrentHRP and (NpcHRP.Position - CurrentHRP.Position).Magnitude > 10 then Continue = false end
+                            else
+                                Continue = false
+                            end
+                            task.wait(0.1)
+                        end
+                        HRP.Anchored = false
+                        HRP.CFrame = NpcHRP.CFrame + Vector3.new(0,10,0)
+                    end
+                end
+            end)
+        end
+    end,
+})
+MobFarmDropdown = MobFarmTab:CreateDropdown({
+    Name = "MobSelect",
+    Options = {"Zombie", "Delver Zombie", "Elite Zombie", "Brute Zombie", "Bomber", "Skeleton Rogue", "Axe Skeleton", "Deathaxe Skeleton", "Elite Rogue Skeleton", "Elite Deathaxe Skeleton", "Reaper", "Slime", "Blazing Slime"},
+    CurrentOption = {"Zombie"},
+    MultipleOptions = true,
+    Flag = "MobFarmDropdown",
+    Callback = function(Options)
+    end,
+})
+MobFarmForwardSlider = MobFarmTab:CreateSlider({
+    Name = "Forward OffSet",
+    Range = {-10, 10},
+    Increment = 1,
+    Suffix = "cm",
+    CurrentValue = -5,
+    Flag = "MineFarmHeightSlider",
+    Callback = function(Value)
+    end,
+})
+MobFarmRightSlider = MobFarmTab:CreateSlider({
+    Name = "Right Offset",
+    Range = {-10, 10},
+    Increment = 1,
+    Suffix = "cm",
+    CurrentValue = 0,
+    Flag = "MineFarmHeightSlider",
+    Callback = function(Value)
+    end,
+})
+MobFarmUpSlider = MobFarmTab:CreateSlider({
+    Name = "Up Offset",
+    Range = {-10, 10},
+    Increment = 1,
+    Suffix = "cm",
+    CurrentValue = 0,
+    Flag = "MineFarmHeightSlider",
+    Callback = function(Value)
     end,
 })
 
