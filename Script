@@ -7,7 +7,7 @@ local Window = Rayfield:CreateWindow({
     LoadingTitle = "The Forge Beta",
     LoadingSubtitle = "by ༗ Pv3Moddz </>",
     ShowText = "༗ Pv3Moddz </>",
-    Theme = "Amethyst",
+    Theme = "Dark Blue",
     ToggleUIKeybind = "K",
     ConfigurationSaving = {
         Enabled = true,
@@ -16,7 +16,6 @@ local Window = Rayfield:CreateWindow({
 })
 
 local Teleporting = false
-
 
 local MineFarmRunning = false
 local MineFarmToggle = nil
@@ -32,6 +31,12 @@ local MobFarmRightSlider = nil
 local MobFarmUpSlider = nil
 
 local TeleportSpeedSlider = nil
+
+local AutoSellRunning = false
+local AutoSellToggle = nil
+local AutoSellMinerDropdown = nil
+local AutoSellEssenceDropdown = nil
+local AutoSellSlider = nil
 
 local MainTab = Window:CreateTab("Main", 4483362458)
 
@@ -62,10 +67,10 @@ MainTab:CreateButton({
     end,
 })
 
-local MinerFarmTab = Window:CreateTab(" Farm", 4483362458)
-MinerFarmTab:CreateSection(" Mine")
+local MinerFarmTab = Window:CreateTab("Auto Mine", 4483362458)
+MinerFarmTab:CreateSection("Auto Mine")
 MineFarmToggle = MinerFarmTab:CreateToggle({
-    Name = "Enable MineFarm",
+    Name = "Enable AutoMine",
     CurrentValue = false,
     Flag = "MineFarmToggle",
     Callback = function(Value)
@@ -73,6 +78,15 @@ MineFarmToggle = MinerFarmTab:CreateToggle({
         if Value and MineFarmDropdown and AreaMineFarmDropdown and MineFarmHeightSlider then
             task.spawn(function()
                 while MineFarmRunning do
+                    if MobFarmToggle and MobFarmToggle.CurrentValue == true then
+                        MobFarmToggle:Set(false)
+                        Rayfield:Notify({
+                            Title = "MobFarm Disabled",
+                            Content = "This function disable MobFarm",
+                            Duration = 3.0,
+                            Image = 4483362458,
+                            })
+                    end
                     task.wait()
                     local HRP = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
                     if not HRP then continue end
@@ -140,7 +154,7 @@ MineFarmToggle = MinerFarmTab:CreateToggle({
 MineFarmDropdown = MinerFarmTab:CreateDropdown({
     Name = "Stone Type",
     Options = {"Pebble", "Rock", "Boulder", "Lucky Block", "Basalt Rock", "Basalt Core", "Basalt Vein", "Volcanic Rock", "Crimson Crystal", "Cyan Crystal", "Earth Crystal", "Light Crystal", "Violet Crystal"},
-    CurrentOption = {"Pebble"},
+    CurrentOption = {},
     MultipleOptions = true,
     Flag = "MineFarmDropdown",
     Callback = function(Options)
@@ -149,7 +163,7 @@ MineFarmDropdown = MinerFarmTab:CreateDropdown({
 AreaMineFarmDropdown = MinerFarmTab:CreateDropdown({
     Name = "Area Miner",
     Options = {"Island1CaveDeep", "Island1CaveMid", "Island1CaveStart", "Roof", "Island2CaveDanger1", "Island2CaveDanger2", "Island2CaveDanger3", "Island2CaveDanger4", "Island2CaveDangerClosed", "Island2CaveDeep", "Island2CaveLavaClosed", "Island2CaveMid", "Island2CaveStart", "Island2GoblinCave", "Island2VolcanicDepths"},
-    CurrentOption = {"Island1CaveDeep"},
+    CurrentOption = {},
     MultipleOptions = true,
     Flag = "AreaMineFarmDropdown",
     Callback = function(Options)
@@ -177,6 +191,15 @@ MobFarmToggle = MobFarmTab:CreateToggle({
         if Value and MobFarmDropdown then
             task.spawn(function()
                 while MobFarmRunning and MobFarmForwardSlider and MobFarmRightSlider and MobFarmUpSlider do
+                    if MineFarmToggle and MineFarmToggle.CurrentValue == true then
+                        MineFarmToggle:Set(false)
+                        Rayfield:Notify({
+                            Title = "AutoMine Disabled",
+                            Content = "This function disable AutoMine",
+                            Duration = 3.0,
+                            Image = 4483362458,
+                            })
+                    end
                     task.wait()
                     local HRP = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
                     if not HRP then continue end
@@ -226,7 +249,7 @@ MobFarmToggle = MobFarmTab:CreateToggle({
 MobFarmDropdown = MobFarmTab:CreateDropdown({
     Name = "MobSelect",
     Options = {"Zombie", "Delver Zombie", "EliteZombie", "Brute Zombie", "Bomber", "Skeleton Rogue", "Axe Skeleton", "Deathaxe Skeleton", "Elite Rogue Skeleton", "Elite Deathaxe Skeleton", "Reaper", "Slime", "Blazing Slime"},
-    CurrentOption = {"Zombie"},
+    CurrentOption = {},
     MultipleOptions = true,
     Flag = "MobFarmDropdown",
     Callback = function(Options)
@@ -340,6 +363,89 @@ TeleportTab:CreateButton({
         local Pos = Vector3.new(-155, 30, 115)
         local NewPos = CFrame.new(Pos, Pos + Vector3.new(0.5,0,1))
         TeleportFunction(Pos, NewPos)
+    end,
+})
+
+local AutoSellTab = Window:CreateTab("Auto Sell", 4483362458)
+local function SellItem()
+    if AutoSellMinerDropdown and AutoSellEssenceDropdown then
+        local Itens = AutoSellMinerDropdown.CurrentOption
+        for _, Item in ipairs(AutoSellEssenceDropdown.CurrentOption) do table.insert(Itens, Item) end
+        local Inventory = game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("EnhanceService"):WaitForChild("RF"):WaitForChild("FindEquipmentByGUID"):InvokeServer().replica.Data.Inventory
+        local ItenList = {}
+        local Count = 0
+        for Key, Value in pairs(Inventory) do
+            if typeof(Value) == "table" then
+                for _, Item in pairs(Value) do
+                    if Item.Name and Item.Quantity and table.find(Itens, tostring(Item.Name)) then
+                        ItenList[Item.Name] = Item.Quantity
+                        Count += 1
+                    end
+                end
+            else
+                if table.find(Itens, tostring(Key)) then
+                    ItenList[Key] = Value
+                    Count += 1
+                end
+            end
+        end
+        if Count > 0 then
+            game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("ProximityService"):WaitForChild("RF"):WaitForChild("ForceDialogue"):InvokeServer(workspace:WaitForChild("Proximity"):WaitForChild("Greedy Cey"), "SellConfirmMisc")
+            game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("DialogueService"):WaitForChild("RF"):WaitForChild("RunCommand"):InvokeServer("SellConfirm", {Basket = ItenList})
+            game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("StatusService"):WaitForChild("RF"):WaitForChild("GetPlayerEquipmentInfo"):InvokeServer()
+            game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("DialogueService"):WaitForChild("RE"):WaitForChild("DialogueEvent"):FireServer("Closed")
+        end
+    end
+end
+AutoSellTab:CreateSection("Auto Sell")
+AutoSellToggle = AutoSellTab:CreateToggle({
+    Name = "Auto Sell",
+    CurrentValue = false,
+    Flag = "AutoSellMinerToggle",
+    Callback = function(Value)
+        AutoSellRunning = Value
+        if AutoSellSlider then
+            task.spawn(function()
+                while AutoSellRunning do
+                    task.wait(AutoSellSlider.CurrentValue)
+                    SellItem()
+                end
+            end)
+        end
+    end,
+})
+AutoSellTab:CreateButton({
+    Name = "Manual Sell",
+    Callback = function()
+        SellItem()
+    end,
+})
+AutoSellMinerDropdown = AutoSellTab:CreateDropdown({
+    Name = "Miners Select",
+    Options = {"Stone", "Sand Stone", "Copper", "Iron", "Tin", "Silver", "Gold", "Mushroommite", "Platinum", "Bananite", "Cardboardite", "Aite", "Poopite", "Fichillium", "Cobalt", "Titanium", "Volcanic Rock", "Lapis Lazuli", "Quartz", "Amethyst", "Topaz", "Diamond", "Sapphire", "Cuprite", "Obsidian", "Emerald", "Ruby", "Rivalite", "Uranium", "Mythril", "Eye Ore", "Fireite", "Magmaite", "Lightite", "Demonite", "Darkryte"},
+    CurrentOption = {},
+    MultipleOptions = true,
+    Flag = "AutoSellMinerDropdown",
+    Callback = function(Options)
+    end,
+})
+AutoSellEssenceDropdown = AutoSellTab:CreateDropdown({
+    Name = "Essences Select",
+    Options = {"Tiny Essence", "Small Essence", "Medium Essence", "Greater Essence", "Epic Essence", "Superior Essence"},
+    CurrentOption = {},
+    MultipleOptions = true,
+    Flag = "AutoSellEssenceDropdown",
+    Callback = function(Options)
+    end,
+})
+AutoSellSlider = AutoSellTab:CreateSlider({
+    Name = "AutoSell Delay",
+    Range = {30, 120},
+    Increment = 1,
+    Suffix = "s",
+    CurrentValue = 60,
+    Flag = "AutoSellSlider",
+    Callback = function(Value)
     end,
 })
 
