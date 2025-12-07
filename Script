@@ -1,5 +1,6 @@
 local Player = game.Players.LocalPlayer
-local Tween = game:GetService('TweenService')
+local Tween = game:GetService("TweenService")
+local VirtualUser = game:GetService("VirtualUser")
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Window = Rayfield:CreateWindow({
     Name = "The Forge Beta (༗ Pv3Moddz </>)",
@@ -16,6 +17,9 @@ local Window = Rayfield:CreateWindow({
 })
 
 local Teleporting = false
+
+local AntiAfk = false
+local NoClip = false
 
 local MineFarmRunning = false
 local MineFarmToggle = nil
@@ -41,14 +45,50 @@ local AutoSellMinerDropdown = nil
 local AutoSellEssenceDropdown = nil
 local AutoSellSlider = nil
 
+Player.Idled:connect(function()
+    if AntiAfk then
+        VirtualUser:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+        wait(5)
+        VirtualUser:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+    end
+end)
+game:GetService("RunService").Stepped:Connect(function()
+	if NoClip and Player.Character then
+		for _, part in ipairs(Player.Character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+			end
+		end
+	end
+end)
+
 local MainTab = Window:CreateTab("Main", 4483362458)
+MainTab:CreateSection("NoClip")
+MainTab:CreateToggle({
+    Name = "NoClip",
+    CurrentValue = false,
+    Flag = "NoClip",
+    Callback = function(Value)
+        NoClip = Value
+    end,
+})
+
+MainTab:CreateSection("Anti Afk")
+MainTab:CreateToggle({
+    Name = "Anti Afk",
+    CurrentValue = false,
+    Flag = "AntiAfk",
+    Callback = function(Value)
+        AntiAfk = Value
+    end,
+})
 
 MainTab:CreateSection("Camera")
 MainTab:CreateSlider({
     Name = "CameraMaxZoomDistance",
     Range = {50, 500},
     Increment = 1,
-    Suffix = "cm",
+    Suffix = "Studs",
     CurrentValue = 50,
     Flag = "CameraMaxZoomSlide",
     Callback = function(Value)
@@ -130,12 +170,12 @@ MineFarmToggle = MinerFarmTab:CreateToggle({
                             while CurrentHealth and Target and CurrentHealth > 0 and MineFarmRunning and Continue do
                                 local Pos = Destination.CFrame + Vector3.new(0,MineFarmHeightSlider.CurrentValue,0)
                                 local NewCFrame = CFrame.new(Pos.Position, Destination.Position)
-                                if (Destination.Position - HRP.Position).Magnitude > InstaTeleportSlider.CurrentValue then
-                                    local TPTween = Tween:Create(HRP, TweenInfo.new((Destination.Position - HRP.Position).Magnitude / TeleportSpeedSlider.CurrentValue, Enum.EasingStyle.Linear), {CFrame = NewCFrame})
-                                    TPTween:Play()
-                                    TPTween.Completed:Wait()
+                                if (Destination.Position - HRP.Position).Magnitude < InstaTeleportSlider.CurrentValue then
+                                    HRP.CFrame = CFrame.new(NewCFrame.Position, Destination.Position)
                                 end
-                                HRP.CFrame = CFrame.new(NewCFrame.Position, Destination.Position)
+                                local TPTween = Tween:Create(HRP, TweenInfo.new((Destination.Position - HRP.Position).Magnitude / TeleportSpeedSlider.CurrentValue, Enum.EasingStyle.Linear), {CFrame = NewCFrame})
+                                TPTween:Play()
+                                TPTween.Completed:Wait()
                                 HRP.Anchored = MineFarmAnchorToggle.CurrentValue
                                 CurrentHealth = Target:GetAttribute("Health")
                                 game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("ToolService"):WaitForChild("RF"):WaitForChild("ToolActivated"):InvokeServer("Pickaxe")
@@ -149,7 +189,6 @@ MineFarmToggle = MinerFarmTab:CreateToggle({
                                 local CurrentHRP = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
                                 if Destination and CurrentHRP and (Destination.Position - CurrentHRP.Position).Magnitude > 10 then Continue = false end
                                 if not Named then Continue = false end
-                                HRP.Anchored = false
                                 task.wait()
                             end
                             HRP.Anchored = false
@@ -246,12 +285,12 @@ MobFarmToggle = MobFarmTab:CreateToggle({
                                 HRP.Anchored = false
                                 local Pos = NpcHRP.CFrame + (NpcHRP.CFrame.LookVector * MobFarmForwardSlider.CurrentValue) + (NpcHRP.CFrame.UpVector * MobFarmUpSlider.CurrentValue) + (NpcHRP.CFrame.RightVector * MobFarmRightSlider.CurrentValue)
                                 local NewCFrame = CFrame.new(Pos.Position, NpcHRP.Position)
-                                if (NpcHRP.Position - CurrentHRP.Position).Magnitude > InstaTeleportSlider.CurrentValue then
-                                    local TPTween = Tween:Create(HRP, TweenInfo.new((NpcHRP.Position - HRP.Position).Magnitude / TeleportSpeedSlider.CurrentValue, Enum.EasingStyle.Linear), {CFrame = NewCFrame})
-                                    TPTween:Play()
-                                    TPTween.Completed:Wait()
+                                if (NpcHRP.Position - CurrentHRP.Position).Magnitude < InstaTeleportSlider.CurrentValue then
+                                    HRP.CFrame = NewCFrame
                                 end
-                                HRP.CFrame = NewCFrame
+                                local TPTween = Tween:Create(HRP, TweenInfo.new((NpcHRP.Position - HRP.Position).Magnitude / TeleportSpeedSlider.CurrentValue, Enum.EasingStyle.Linear), {CFrame = NewCFrame})
+                                TPTween:Play()
+                                TPTween.Completed:Wait()
                                 HRP.Anchored = MobFarmAnchorToggle.CurrentValue
                                 game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("ToolService"):WaitForChild("RF"):WaitForChild("ToolActivated"):InvokeServer("Weapon")
                                 if (NpcHRP.Position - CurrentHRP.Position).Magnitude > 10 then Continue = false end
@@ -312,6 +351,88 @@ MobFarmUpSlider = MobFarmTab:CreateSlider({
     CurrentValue = 0,
     Flag = "MobFarmUpSlider",
     Callback = function(Value)
+    end,
+})
+
+local EspTab = Window:CreateTab("Esp", 4483362458)
+EspTab:CreateSection("Player Esp")
+EspTab:CreateToggle({
+    Name = "Enable Player Esp",
+    CurrentValue = false,
+    Flag = "PlayerEsp",
+    Callback = function(Value)
+        PlayerEsp = Value
+        task.spawn(function()
+            if PlayerEsp then
+                while PlayerEsp do
+                    for _, CurrentPlayer in ipairs(game.Players:GetChildren()) do
+                        local CurrentChar = CurrentPlayer.Character
+                        if CurrentChar and CurrentChar:FindFirstChild("Head") then
+                            if CurrentChar:FindFirstChild("PlayerEspBillboard") then
+                                local Distance = math.floor((Player.Character:FindFirstChild("HumanoidRootPart").Position - CurrentChar:FindFirstChild("HumanoidRootPart").Position).Magnitude) or 0
+                                CurrentChar.PlayerEspBillboard.PlayerEspText.Text = CurrentPlayer.Name.." | "..Distance.." Studs"
+                            else
+                                local PlayerEspBillboard = Instance.new("BillboardGui")
+                                PlayerEspBillboard.Name = "PlayerEspBillboard"
+                                PlayerEspBillboard.Size = UDim2.new(1,0,1,0)
+                                PlayerEspBillboard.Adornee = CurrentChar.Head
+                                PlayerEspBillboard.StudsOffset = Vector3.new(0,1.5,0)
+                                PlayerEspBillboard.AlwaysOnTop = true
+                                local PlayerEspText = Instance.new("TextLabel")
+                                PlayerEspText.Name = "PlayerEspText"
+                                PlayerEspText.Parent = PlayerEspBillboard
+                                PlayerEspText.Size = UDim2.new(1,0,1,0)
+                                PlayerEspText.BackgroundTransparency = 1
+                                PlayerEspText.TextColor3 = Color3.new(1, 1, 1)
+                                PlayerEspText.TextStrokeTransparency = 0
+                                PlayerEspText.Text = CurrentPlayer.Name
+                                PlayerEspBillboard.Parent = CurrentChar
+                            end
+                        end
+                    end
+                    task.wait(1.0)
+                end
+                for _, CurrentPlayer in ipairs(game.Players:GetChildren()) do
+                    local CurrentChar = CurrentPlayer.Character
+                    if CurrentChar and CurrentChar:FindFirstChild("PlayerEspBillboard") then
+                        CurrentChar.PlayerEspBillboard:Destroy()
+                    end
+                end
+            end
+        end)
+    end,
+})
+EspTab:CreateToggle({
+    Name = "Enable Player Highlight",
+    CurrentValue = false,
+    Flag = "PlayerHighlight",
+    Callback = function(Value)
+        PlayerHighlight = Value
+        task.spawn(function()
+            if PlayerHighlight then
+                while PlayerHighlight do
+                    for _, CurrentPlayer in ipairs(game.Players:GetChildren()) do
+                        local CurrentChar = CurrentPlayer.Character
+                        if CurrentChar and not CurrentChar:FindFirstChild("PlayerHighlight") then
+                            local PlayerHighlight = Instance.new("Highlight")
+                            PlayerHighlight.Name = "PlayerHighlight"
+                            PlayerHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                            PlayerHighlight.OutlineTransparency = 0.5
+                            PlayerHighlight.FillTransparency = 1
+                            PlayerHighlight.Adornee = CurrentChar
+                            PlayerHighlight.Parent = CurrentChar
+                        end
+                    end
+                    task.wait(1.0)
+                end
+                for _, CurrentPlayer in ipairs(game.Players:GetChildren()) do
+                    local CurrentChar = CurrentPlayer.Character
+                    if CurrentChar and CurrentChar:FindFirstChild("PlayerHighlight") then
+                        CurrentChar.PlayerHighlight:Destroy()
+                    end
+                end
+            end
+        end)
     end,
 })
 
