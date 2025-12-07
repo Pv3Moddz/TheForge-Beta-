@@ -19,18 +19,21 @@ local Teleporting = false
 
 local MineFarmRunning = false
 local MineFarmToggle = nil
+local MineFarmAnchorToggle = nil
 local MineFarmDropdown = nil
 local AreaMineFarmDropdown = nil
 local MineFarmHeightSlider = nil
 
 local MobFarmRunning = false
 local MobFarmToggle = nil
+local MobFarmAnchorToggle = nil
 local MobFarmDropdown = nil
 local MobFarmForwardSlider = nil
 local MobFarmRightSlider = nil
 local MobFarmUpSlider = nil
 
 local TeleportSpeedSlider = nil
+local InstaTeleportSlider = nil
 
 local AutoSellRunning = false
 local AutoSellToggle = nil
@@ -121,16 +124,22 @@ MineFarmToggle = MinerFarmTab:CreateToggle({
                     end
                     if Target then
                         local Destination = Target:FindFirstChild("Hitbox")
-                        if Destination and TeleportSpeedSlider and MineFarmHeightSlider then
-                            local TPTween = Tween:Create(HRP, TweenInfo.new((Destination.Position - HRP.Position).Magnitude / TeleportSpeedSlider.CurrentValue, Enum.EasingStyle.Linear), {CFrame = Destination.CFrame + Vector3.new(0,MineFarmHeightSlider.CurrentValue,0)})
-                            TPTween:Play()
-                            TPTween.Completed:Wait()
-                            HRP.Anchored = true
+                        if Destination and TeleportSpeedSlider and InstaTeleportSlider and MineFarmHeightSlider and MineFarmAnchorToggle then
                             local Continue = true
                             local CurrentHealth = Target:GetAttribute("Health")
                             while CurrentHealth and Target and CurrentHealth > 0 and MineFarmRunning and Continue do
+                                local Pos = Destination.CFrame + Vector3.new(0,MineFarmHeightSlider.CurrentValue,0)
+                                local NewCFrame = CFrame.new(Pos.Position, Destination.Position)
+                                if (Destination.Position - HRP.Position).Magnitude > InstaTeleportSlider.CurrentValue then
+                                    local TPTween = Tween:Create(HRP, TweenInfo.new((Destination.Position - HRP.Position).Magnitude / TeleportSpeedSlider.CurrentValue, Enum.EasingStyle.Linear), {CFrame = NewCFrame})
+                                    TPTween:Play()
+                                    TPTween.Completed:Wait()
+                                end
+                                HRP.CFrame = CFrame.new(NewCFrame.Position, Destination.Position)
+                                HRP.Anchored = MineFarmAnchorToggle.CurrentValue
                                 CurrentHealth = Target:GetAttribute("Health")
                                 game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("ToolService"):WaitForChild("RF"):WaitForChild("ToolActivated"):InvokeServer("Pickaxe")
+                                game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("ToolService"):WaitForChild("RF"):WaitForChild("ToolActivated"):InvokeServer("Weapon")
                                 local Named = false
                                 for _, StoneName in ipairs(MineFarmDropdown.CurrentOption) do
                                     if string.match(Target.Name, "^"..StoneName) then
@@ -140,7 +149,8 @@ MineFarmToggle = MinerFarmTab:CreateToggle({
                                 local CurrentHRP = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
                                 if Destination and CurrentHRP and (Destination.Position - CurrentHRP.Position).Magnitude > 10 then Continue = false end
                                 if not Named then Continue = false end
-                                task.wait(0.1)
+                                HRP.Anchored = false
+                                task.wait()
                             end
                             HRP.Anchored = false
                             HRP.CFrame = Destination.CFrame + Vector3.new(0,10,0)
@@ -149,6 +159,13 @@ MineFarmToggle = MinerFarmTab:CreateToggle({
                 end
             end)
         end
+    end,
+})
+MineFarmAnchorToggle = MinerFarmTab:CreateToggle({
+    Name = "Anchor Character",
+    CurrentValue = true,
+    Flag = "MineFarmAnchorToggle",
+    Callback = function(Value)
     end,
 })
 MineFarmDropdown = MinerFarmTab:CreateDropdown({
@@ -173,7 +190,7 @@ MineFarmHeightSlider = MinerFarmTab:CreateSlider({
     Name = "Miner Height",
     Range = {-10, 10},
     Increment = 1,
-    Suffix = "cm",
+    Suffix = "Studs",
     CurrentValue = -7,
     Flag = "MineFarmHeightSlider",
     Callback = function(Value)
@@ -224,19 +241,24 @@ MobFarmToggle = MobFarmTab:CreateToggle({
                         local NpcHRP = Target:FindFirstChild("HumanoidRootPart")
                         local NpcHumanoid = Target:FindFirstChild("Humanoid")
                         while Target and Continue and MobFarmRunning do
-                            if NpcHRP and NpcHumanoid and NpcHumanoid.Health > 0 and TeleportSpeedSlider then
+                            local CurrentHRP = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+                            if CurrentHRP and NpcHRP and NpcHumanoid and NpcHumanoid.Health > 0 and TeleportSpeedSlider and InstaTeleportSlider and MobFarmAnchorToggle then
                                 HRP.Anchored = false
-                                local TPTween = Tween:Create(HRP, TweenInfo.new((NpcHRP.Position - HRP.Position).Magnitude / TeleportSpeedSlider.CurrentValue, Enum.EasingStyle.Linear), {CFrame = NpcHRP.CFrame + (NpcHRP.CFrame.LookVector * MobFarmForwardSlider.CurrentValue) + (NpcHRP.CFrame.UpVector * MobFarmUpSlider.CurrentValue) + (NpcHRP.CFrame.RightVector * MobFarmRightSlider.CurrentValue)})
-                                TPTween:Play()
-                                TPTween.Completed:Wait()
-                                -- HRP.Anchored = true
+                                local Pos = NpcHRP.CFrame + (NpcHRP.CFrame.LookVector * MobFarmForwardSlider.CurrentValue) + (NpcHRP.CFrame.UpVector * MobFarmUpSlider.CurrentValue) + (NpcHRP.CFrame.RightVector * MobFarmRightSlider.CurrentValue)
+                                local NewCFrame = CFrame.new(Pos.Position, NpcHRP.Position)
+                                if (NpcHRP.Position - CurrentHRP.Position).Magnitude > InstaTeleportSlider.CurrentValue then
+                                    local TPTween = Tween:Create(HRP, TweenInfo.new((NpcHRP.Position - HRP.Position).Magnitude / TeleportSpeedSlider.CurrentValue, Enum.EasingStyle.Linear), {CFrame = NewCFrame})
+                                    TPTween:Play()
+                                    TPTween.Completed:Wait()
+                                end
+                                HRP.CFrame = NewCFrame
+                                HRP.Anchored = MobFarmAnchorToggle.CurrentValue
                                 game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("ToolService"):WaitForChild("RF"):WaitForChild("ToolActivated"):InvokeServer("Weapon")
-                                local CurrentHRP = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
-                                if CurrentHRP and (NpcHRP.Position - CurrentHRP.Position).Magnitude > 10 then Continue = false end
+                                if (NpcHRP.Position - CurrentHRP.Position).Magnitude > 10 then Continue = false end
                             else
                                 Continue = false
                             end
-                            task.wait(0.1)
+                            task.wait()
                         end
                         HRP.Anchored = false
                         HRP.CFrame = NpcHRP.CFrame + Vector3.new(0,10,0)
@@ -246,9 +268,16 @@ MobFarmToggle = MobFarmTab:CreateToggle({
         end
     end,
 })
+MobFarmAnchorToggle = MobFarmTab:CreateToggle({
+    Name = "Anchor Character",
+    CurrentValue = true,
+    Flag = "MobFarmAnchorToggle",
+    Callback = function(Value)
+    end,
+})
 MobFarmDropdown = MobFarmTab:CreateDropdown({
     Name = "MobSelect",
-    Options = {"Zombie", "Delver Zombie", "EliteZombie", "Brute Zombie", "Bomber", "Skeleton Rogue", "Axe Skeleton", "Deathaxe Skeleton", "Elite Rogue Skeleton", "Elite Deathaxe Skeleton", "Reaper", "Slime", "Blazing Slime"},
+    Options = {"Zombie", "Delver Zombie", "EliteZombie", "Brute Zombie", "Bomber", "Skeleton Rogue", "Axe Skeleton", "Deathaxe Skeleton", "Elite Rogue Skeleton", "Elite Deathaxe Skeleton", "Blight Pyromancer", "Reaper", "Slime", "Blazing Slime"},
     CurrentOption = {},
     MultipleOptions = true,
     Flag = "MobFarmDropdown",
@@ -259,9 +288,9 @@ MobFarmForwardSlider = MobFarmTab:CreateSlider({
     Name = "Forward OffSet",
     Range = {-10, 10},
     Increment = 1,
-    Suffix = "cm",
+    Suffix = "Studs",
     CurrentValue = -5,
-    Flag = "MineFarmHeightSlider",
+    Flag = "MobFarmForwardSlider",
     Callback = function(Value)
     end,
 })
@@ -269,9 +298,9 @@ MobFarmRightSlider = MobFarmTab:CreateSlider({
     Name = "Right Offset",
     Range = {-10, 10},
     Increment = 1,
-    Suffix = "cm",
+    Suffix = "Studs",
     CurrentValue = 0,
-    Flag = "MineFarmHeightSlider",
+    Flag = "MobFarmRightSlider",
     Callback = function(Value)
     end,
 })
@@ -279,15 +308,15 @@ MobFarmUpSlider = MobFarmTab:CreateSlider({
     Name = "Up Offset",
     Range = {-10, 10},
     Increment = 1,
-    Suffix = "cm",
+    Suffix = "Studs",
     CurrentValue = 0,
-    Flag = "MineFarmHeightSlider",
+    Flag = "MobFarmUpSlider",
     Callback = function(Value)
     end,
 })
 
 local TeleportTab = Window:CreateTab("Teleport", 4483362458)
-TeleportTab:CreateSection("TeleportSpeed")
+TeleportTab:CreateSection("Teleport Settings")
 local function TeleportFunction(Pos, NewPos)
     local HRP = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
     if HRP and TeleportSpeedSlider and not Teleporting then
@@ -304,67 +333,39 @@ TeleportSpeedSlider = TeleportTab:CreateSlider({
     Increment = 1,
     Suffix = "x",
     CurrentValue = 60,
-    Flag = "MineFarmHeightSlider",
+    Flag = "TeleportSpeedSlider",
+    Callback = function(Value)
+    end,
+})
+InstaTeleportSlider = TeleportTab:CreateSlider({
+    Name = "Insta Teleport Max Distance",
+    Range = {0, 200},
+    Increment = 1,
+    Suffix = "Studs",
+    CurrentValue = 50,
+    Flag = "InstaTeleportSlider",
     Callback = function(Value)
     end,
 })
 TeleportTab:CreateSection("Teleport Shops")
-TeleportTab:CreateButton({
-    Name = "Forging Station",
-    Callback = function()
-        local Pos = Vector3.new(-193, 30, 160)
-        local NewPos = CFrame.new(Pos, Pos + Vector3.new(0,0,1))
-        TeleportFunction(Pos, NewPos)
-    end,
-})
-TeleportTab:CreateButton({
-    Name = "Enhancer Shop",
-    Callback = function()
-        local Pos = Vector3.new(-260, 20, 30)
-        local NewPos = CFrame.new(Pos, Pos + Vector3.new(0,0,-1))
-        TeleportFunction(Pos, NewPos)
-    end,
-})
-TeleportTab:CreateButton({
-    Name = "Runemaker Shop",
-    Callback = function()
-        local Pos = Vector3.new(-271, 20, 145)
-        local NewPos = CFrame.new(Pos, Pos + Vector3.new(0,0,1))
-        TeleportFunction(Pos, NewPos)
-    end,
-})
-TeleportTab:CreateButton({
-    Name = "Pickaxe Shop",
-    Callback = function()
-        local Pos = Vector3.new(-95, 30, 89)
-        local NewPos = CFrame.new(Pos, Pos + Vector3.new(1,0,1))
-        TeleportFunction(Pos, NewPos)
-    end,
-})
-TeleportTab:CreateButton({
-    Name = "Weapon Buyer",
-    Callback = function()
-        local Pos = Vector3.new(-177, 30, 18)
-        local NewPos = CFrame.new(Pos, Pos + Vector3.new(-1,0,-1))
-        TeleportFunction(Pos, NewPos)
-    end,
-})
-TeleportTab:CreateButton({
-    Name = "Gem Buyer",
-    Callback = function()
-        local Pos = Vector3.new(-113, 40, -35)
-        local NewPos = CFrame.new(Pos, Pos + Vector3.new(1,0,-1))
-        TeleportFunction(Pos, NewPos)
-    end,
-})
-TeleportTab:CreateButton({
-    Name = "Merchant Wagon",
-    Callback = function()
-        local Pos = Vector3.new(-155, 30, 115)
-        local NewPos = CFrame.new(Pos, Pos + Vector3.new(0.5,0,1))
-        TeleportFunction(Pos, NewPos)
-    end,
-})
+local TeleportLocations = {
+    ["Forging Station"] = Vector3.new(-193, 30, 160),
+    ["Enhancer Shop"] = Vector3.new(-260, 20, 30),
+    ["Runemaker Shop"] = Vector3.new(-271, 20, 145),
+    ["Pickaxe Shop"] = Vector3.new(-95, 30, 89),
+    ["Weapon Buyer"] = Vector3.new(-177, 30, 18),
+    ["Gem Buyer"] = Vector3.new(-113, 40, -35),
+    ["Merchant Wagon"] = Vector3.new(-155, 30, 115),
+}
+for Name, Pos in pairs(TeleportLocations) do
+    TeleportTab:CreateButton({
+        Name = Name,
+        Callback = function()
+            local NewPos = CFrame.new(Pos)
+            TeleportFunction(Pos, NewPos)
+        end,
+    })
+end
 
 local AutoSellTab = Window:CreateTab("Auto Sell", 4483362458)
 local function SellItem()
@@ -390,10 +391,15 @@ local function SellItem()
             end
         end
         if Count > 0 then
+            local HRP = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
+            local HRPPos = HRP.CFrame
+            HRP.Anchored = true
             game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("ProximityService"):WaitForChild("RF"):WaitForChild("ForceDialogue"):InvokeServer(workspace:WaitForChild("Proximity"):WaitForChild("Greedy Cey"), "SellConfirmMisc")
             game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("DialogueService"):WaitForChild("RF"):WaitForChild("RunCommand"):InvokeServer("SellConfirm", {Basket = ItenList})
             game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("StatusService"):WaitForChild("RF"):WaitForChild("GetPlayerEquipmentInfo"):InvokeServer()
             game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Knit"):WaitForChild("Services"):WaitForChild("DialogueService"):WaitForChild("RE"):WaitForChild("DialogueEvent"):FireServer("Closed")
+            HRP.Anchored = false
+            HRP.CFrame = HRPPos
         end
     end
 end
@@ -422,7 +428,7 @@ AutoSellTab:CreateButton({
 })
 AutoSellMinerDropdown = AutoSellTab:CreateDropdown({
     Name = "Miners Select",
-    Options = {"Stone", "Sand Stone", "Copper", "Iron", "Tin", "Silver", "Gold", "Mushroommite", "Platinum", "Bananite", "Cardboardite", "Aite", "Poopite", "Fichillium", "Cobalt", "Titanium", "Volcanic Rock", "Lapis Lazuli", "Quartz", "Amethyst", "Topaz", "Diamond", "Sapphire", "Cuprite", "Obsidian", "Emerald", "Ruby", "Rivalite", "Uranium", "Mythril", "Eye Ore", "Fireite", "Magmaite", "Lightite", "Demonite", "Darkryte"},
+    Options = {"Stone", "Sand Stone", "Copper", "Iron", "Tin", "Silver", "Gold", "Mushroomite", "Platinum", "Bananite", "Cardboardite", "Aite", "Poopite", "Fichillium", "Cobalt", "Titanium", "Volcanic Rock", "Lapis Lazuli", "Quartz", "Amethyst", "Topaz", "Diamond", "Sapphire", "Cuprite", "Obsidian", "Emerald", "Ruby", "Rivalite", "Uranium", "Mythril", "Eye Ore", "Fireite", "Magmaite", "Lightite", "Demonite", "Darkryte"},
     CurrentOption = {},
     MultipleOptions = true,
     Flag = "AutoSellMinerDropdown",
