@@ -59,7 +59,7 @@ Player.Idled:connect(function()
         VirtualUser:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
     end
 end)
-game:GetService("RunService").Stepped:Connect(function()
+RunService.Stepped:Connect(function()
 	if NoClip and Player.Character then
 		for _, part in ipairs(Player.Character:GetDescendants()) do
 			if part:IsA("BasePart") then
@@ -73,16 +73,18 @@ ForgeGUI:WaitForChild("HammerMinigame").ChildAdded:Connect(function(Button)
         local Frame = Button:WaitForChild("Frame")
         local Border = Frame:WaitForChild("Border")
         local Circle = Frame:WaitForChild("Circle")
-        local connection = RunService.RenderStepped:Connect(function()
-            if Button and Frame and Border and Circle then
+        local Connection = RunService.RenderStepped:Connect(function()
+            if Button and Button.Parent and Frame and Border and Circle then
                 if math.abs(Border.AbsoluteSize.X - Circle.AbsoluteSize.X) <= 20 and math.abs(Border.AbsoluteSize.Y - Circle.AbsoluteSize.Y) <= 20 then
-                    VirtualInputManager:SendMouseButtonEvent(Button.AbsolutePosition.X + Button.AbsoluteSize.X / 2, Button.AbsolutePosition.Y + Button.AbsoluteSize.Y / 2 + GuiService:GetGuiInset().Y, 0, true, game, 0)
+                    local PosX = Button.AbsolutePosition.X + Button.AbsoluteSize.X / 2
+                    local PosY = Button.AbsolutePosition.Y + Button.AbsoluteSize.Y / 2 + GuiService:GetGuiInset().Y
+                    VirtualInputManager:SendMouseButtonEvent(PosX, PosY, 0, true, game, 0)
                     task.wait(0.05)
-                    VirtualInputManager:SendMouseButtonEvent(Button.AbsolutePosition.X + Button.AbsoluteSize.X / 2, Button.AbsolutePosition.Y + Button.AbsoluteSize.Y / 2 + GuiService:GetGuiInset().Y, 0, false, game, 0)
-                    connection:Disconnect()
+                    VirtualInputManager:SendMouseButtonEvent(PosX, PosY, 0, false, game, 0)
+                    Connection:Disconnect()
                 end
             else
-                connection:Disconnect()
+                Connection:Disconnect()
             end
         end)
     end
